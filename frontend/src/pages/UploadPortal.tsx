@@ -64,12 +64,32 @@ export const UploadPortal: React.FC = () => {
     
     setTimeout(() => {
       setIsUploading(false);
-      setUploadSuccess(true);
+      
       if (requestData) {
+        // Mark N pending documents as UPLOADED based on number of files
+        let filesProcessed = 0;
+        const updatedDocs = requestData.expected_documents.map(d => {
+          if (d.status === 'PENDING' && filesProcessed < files.length) {
+            filesProcessed++;
+            return { ...d, status: 'UPLOADED' as DocStatus };
+          }
+          return d;
+        });
+
+        const allUploaded = updatedDocs.every(d => d.status !== 'PENDING');
+        
         setRequestData({
           ...requestData,
-          expected_documents: requestData.expected_documents.map(d => ({...d, status: 'UPLOADED'}))
+          expected_documents: updatedDocs
         });
+        
+        if (allUploaded) {
+          setUploadSuccess(true);
+        } else {
+          // Clear files to allow more uploads for remaining docs
+          setFiles([]);
+          alert(`Successfully uploaded ${filesProcessed} document(s). Please upload the remaining documents.`);
+        }
       }
     }, 1500);
   };
@@ -117,7 +137,12 @@ export const UploadPortal: React.FC = () => {
                 </div>
 
                 <div className="mb-8">
-                  <h3 className="text-lg font-bold text-fhn-dark mb-4 border-b pb-2">Upload Files</h3>
+                  <div className="flex justify-between items-end mb-4 border-b pb-2">
+                    <h3 className="text-lg font-bold text-fhn-dark">Upload Files</h3>
+                    <span className="text-sm font-medium text-fhn-red">
+                      {requestData.expected_documents.filter(d => d.status === 'PENDING').length} remaining
+                    </span>
+                  </div>
                   <FileDropzone onFilesAccepted={setFiles} />
                 </div>
 
