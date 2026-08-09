@@ -38,4 +38,4 @@ class UploadRequestResponse(BaseModel):
     status: str
     expires_at: datetime
     expected_documents: List[ExpectedDocumentResponse]
-    upload_url: str
+    upload_url: Optional[str] = None

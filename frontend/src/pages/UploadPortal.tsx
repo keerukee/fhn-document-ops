@@ -12,6 +12,7 @@ interface ExpectedDocument {
   id: string;
   document_type: string;
   status: DocStatus;
+  is_extra?: boolean;
 }
 
 interface UploadRequestResponse {
@@ -69,29 +70,44 @@ export const UploadPortal: React.FC = () => {
         // Mark N pending documents as UPLOADED based on number of files
         let filesProcessed = 0;
         const updatedDocs = requestData.expected_documents.map(d => {
-          if (d.status === 'PENDING' && filesProcessed < files.length) {
+          if (!d.is_extra && d.status === 'PENDING' && filesProcessed < files.length) {
             filesProcessed++;
             return { ...d, status: 'UPLOADED' as DocStatus };
           }
           return d;
         });
 
-        const allUploaded = updatedDocs.every(d => d.status !== 'PENDING');
+        // Add remaining files as extras (up to 3 total)
+        let currentExtras = updatedDocs.filter(d => d.is_extra).length;
+        while (filesProcessed < files.length && currentExtras < 3) {
+          updatedDocs.push({
+            id: `extra-${Date.now()}-${filesProcessed}`,
+            document_type: files[filesProcessed].name || "Supplemental Document",
+            status: 'UPLOADED',
+            is_extra: true
+          });
+          filesProcessed++;
+          currentExtras++;
+        }
         
         setRequestData({
           ...requestData,
           expected_documents: updatedDocs
         });
         
-        if (allUploaded) {
-          setUploadSuccess(true);
+        setFiles([]);
+        if (filesProcessed < files.length) {
+          alert(`Successfully uploaded ${filesProcessed} document(s). Maximum of 3 extra documents allowed.`);
         } else {
-          // Clear files to allow more uploads for remaining docs
-          setFiles([]);
-          alert(`Successfully uploaded ${filesProcessed} document(s). Please upload the remaining documents.`);
+          alert(`Successfully uploaded ${filesProcessed} document(s).`);
         }
       }
     }, 1500);
+  };
+
+  const handleFinish = async () => {
+    // In a real app: await axios.post(`/api/v1/public/requests/${referenceId}/finish`);
+    setUploadSuccess(true);
   };
 
   if (!requestData) {
@@ -130,9 +146,21 @@ export const UploadPortal: React.FC = () => {
                 <div className="mb-8">
                   <h3 className="text-lg font-bold text-fhn-dark mb-4 border-b pb-2">Required Documents</h3>
                   <div className="space-y-3">
-                    {requestData.expected_documents.map(doc => (
+                    {requestData.expected_documents.filter(d => !d.is_extra).map(doc => (
                       <DocumentItem key={doc.id} id={doc.id} type={doc.document_type} status={doc.status} />
                     ))}
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  <h3 className="text-lg font-bold text-fhn-dark mb-4 border-b pb-2">Supplemental Documents (Optional)</h3>
+                  <div className="space-y-3 mb-4">
+                    {requestData.expected_documents.filter(d => d.is_extra).map(doc => (
+                      <DocumentItem key={doc.id} id={doc.id} type={doc.document_type} status={doc.status} />
+                    ))}
+                    {requestData.expected_documents.filter(d => d.is_extra).length === 0 && (
+                      <p className="text-sm text-gray-500 italic">No extra documents uploaded.</p>
+                    )}
                   </div>
                 </div>
 
@@ -140,13 +168,23 @@ export const UploadPortal: React.FC = () => {
                   <div className="flex justify-between items-end mb-4 border-b pb-2">
                     <h3 className="text-lg font-bold text-fhn-dark">Upload Files</h3>
                     <span className="text-sm font-medium text-fhn-red">
-                      {requestData.expected_documents.filter(d => d.status === 'PENDING').length} remaining
+                      {requestData.expected_documents.filter(d => !d.is_extra && d.status === 'PENDING').length} required remaining
                     </span>
                   </div>
                   <FileDropzone onFilesAccepted={setFiles} />
                 </div>
 
-                <div className="flex justify-end pt-4 border-t">
+                <div className="flex justify-between pt-4 border-t">
+                  <div>
+                    {requestData.expected_documents.filter(d => !d.is_extra).every(d => d.status !== 'PENDING') && (
+                      <button 
+                        onClick={handleFinish}
+                        className="px-6 py-3 rounded-md font-semibold text-fhn-navy border border-fhn-navy hover:bg-gray-100 transition-colors shadow-sm"
+                      >
+                        Finish & Lock Request
+                      </button>
+                    )}
+                  </div>
                   <button 
                     onClick={handleUpload}
                     disabled={files.length === 0 || isUploading}
