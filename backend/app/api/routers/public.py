@@ -3,9 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from app.db.session import get_db
-from app.models.request import UploadRequest, ExpectedDocument, DocumentStatus
+from app.models.request import UploadRequest, ExpectedDocument, DocumentStatus, RequestStatus
 from app.schemas.request import UploadRequestResponse
 from typing import List
+from app.services.storage_service import storage_service
+from app.workers.tasks import process_uploaded_document
 
 router = APIRouter()
 
@@ -27,10 +29,44 @@ async def upload_documents(
     files: List[UploadFile] = File(...),
     db: AsyncSession = Depends(get_db)
 ):
-    # In a real implementation:
-    # 1. Upload file to Azure Blob Storage
-    # 2. Update ExpectedDocument status to UPLOADED and set blob_url
-    # 3. Trigger Celery background task for Document Intelligence, Foundry Validation, Kafka
+    # document_ids should match the number of files
+    doc_ids = [did.strip() for did in document_ids.split(",")]
+    if len(doc_ids) != len(files):
+        raise HTTPException(status_code=400, detail="Mismatched document IDs and files")
+        
+    stmt = select(UploadRequest).options(selectinload(UploadRequest.expected_documents)).where(UploadRequest.id == reference_id)
+    result = await db.execute(stmt)
+    upload_request = result.scalar_one_or_none()
     
-    # Simple mock response
-    return {"status": "accepted", "message": f"Received {len(files)} files for processing."}
+    if not upload_request:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    # Upload files and update ExpectedDocuments
+    for i, file in enumerate(files):
+        doc_id = doc_ids[i]
+        expected_doc = next((doc for doc in upload_request.expected_documents if doc.id == doc_id), None)
+        
+        if expected_doc:
+            # Upload to Azure (or mock)
+            file_content = await file.read()
+            blob_url = await storage_service.upload_document(file.filename, file_content, reference_id)
+            
+            # Update DB
+            expected_doc.status = DocumentStatus.UPLOADED
+            expected_doc.blob_url = blob_url
+            
+            # Trigger Background Celery Task
+            process_uploaded_document.delay(reference_id, expected_doc.id, blob_url)
+
+    # Check overall request status
+    total_docs = len(upload_request.expected_documents)
+    uploaded_docs = sum(1 for d in upload_request.expected_documents if d.status in [DocumentStatus.UPLOADED, DocumentStatus.VALIDATED, DocumentStatus.PROCESSING, DocumentStatus.FAILED])
+    
+    if uploaded_docs == total_docs:
+        upload_request.status = RequestStatus.COMPLETED
+    elif uploaded_docs > 0:
+        upload_request.status = RequestStatus.PARTIALLY_COMPLETED
+        
+    await db.commit()
+    
+    return {"status": "accepted", "message": f"Processed {len(files)} files."}
