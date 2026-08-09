@@ -120,12 +120,8 @@ async def finish_upload(reference_id: str, db: AsyncSession = Depends(get_db)):
     upload_request.status = RequestStatus.COMPLETED
     await db.commit()
     
-    # Calculate if all documents passed validation (mocking check based on expected logic)
-    # Since tasks.py currently handles actual validation async, we assume we check the DB statuses.
-    # We will simulate True for now, but in reality it would be:
-    all_valid = all(d.status in [DocumentStatus.VALIDATED, DocumentStatus.UPLOADED] for d in upload_request.expected_documents)
-    
-    # Publish 'All Done' Event
-    messaging_service.publish_request_completed_event(reference_id, all_valid=all_valid)
+    # We no longer publish the 'All Done' event here.
+    # The background Celery task will publish it once it confirms
+    # this request is COMPLETED and all documents have finished validation.
     
     return {"status": "completed"}
