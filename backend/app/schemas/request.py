@@ -32,6 +32,7 @@ class ExpectedDocumentResponse(BaseModel):
 
 class UploadRequestResponse(BaseModel):
     id: str
+    request_type: str
     customer_name: str
     status: str
     expires_at: datetime

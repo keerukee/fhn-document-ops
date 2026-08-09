@@ -6,6 +6,10 @@ from sqlalchemy.orm import relationship
 import enum
 from .base import Base
 
+class RequestType(str, enum.Enum):
+    STRUCTURED = "STRUCTURED"
+    UNSTRUCTURED = "UNSTRUCTURED"
+
 class RequestStatus(str, enum.Enum):
     PENDING = "PENDING"
     PARTIALLY_COMPLETED = "PARTIALLY_COMPLETED"
@@ -23,6 +27,7 @@ class UploadRequest(Base):
     __tablename__ = "upload_requests"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    request_type = Column(String, default=RequestType.STRUCTURED)
     customer_name = Column(String, nullable=False)
     customer_email = Column(String, nullable=True)
     customer_id = Column(String, nullable=True)
