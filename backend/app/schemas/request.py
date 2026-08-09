@@ -25,6 +25,10 @@ class ExpectedDocumentResponse(BaseModel):
     document_type: str
     status: str
     validation_rules: Optional[Dict[str, Any]] = None
+    is_extra: bool = False
+    
+    class Config:
+        from_attributes = True
 
 class UploadRequestResponse(BaseModel):
     id: str

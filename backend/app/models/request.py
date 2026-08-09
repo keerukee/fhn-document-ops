@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, JSON, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, String, DateTime, JSON, ForeignKey, Boolean, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
@@ -42,5 +42,6 @@ class ExpectedDocument(Base):
     status = Column(String, default=DocumentStatus.PENDING)
     blob_url = Column(String, nullable=True)
     validation_results = Column(JSON, nullable=True)
+    is_extra = Column(Boolean, default=False)
 
     upload_request = relationship("UploadRequest", back_populates="expected_documents")
