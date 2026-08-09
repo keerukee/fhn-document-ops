@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --color-fhn-navy: #002D72;
+  --color-fhn-red: #E81C2D;
+  --color-fhn-gray: #F3F4F6;
+  --color-fhn-dark: #1F2937;
+}
+
+@layer base {
+  body {
+    @apply bg-fhn-gray text-fhn-dark font-sans;
+  }
+}
