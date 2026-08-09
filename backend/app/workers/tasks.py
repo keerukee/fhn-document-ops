@@ -41,5 +41,12 @@ def process_uploaded_document(request_id: str, document_id: str, blob_url: str):
     import time
     time.sleep(2) 
     
+    # Mock validation results
+    validation_results = {"is_valid": True, "confidence": 0.98}
+    
+    # Publish Kafka Event
+    from app.services.messaging_service import messaging_service
+    messaging_service.publish_upload_event(request_id, document_id, blob_url, validation_results)
+    
     logger.info(f"Completed processing for document {document_id}")
     return {"status": "success", "document_id": document_id}
