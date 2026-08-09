@@ -34,6 +34,7 @@ class UploadRequestResponse(BaseModel):
     id: str
     request_type: str
     customer_name: str
+    raw_request_explanation: Optional[str] = None
     status: str
     expires_at: datetime
     expected_documents: List[ExpectedDocumentResponse]

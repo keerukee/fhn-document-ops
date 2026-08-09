@@ -31,6 +31,7 @@ class UploadRequest(Base):
     customer_name = Column(String, nullable=False)
     customer_email = Column(String, nullable=True)
     customer_id = Column(String, nullable=True)
+    raw_request_explanation = Column(String, nullable=True)
     status = Column(String, default=RequestStatus.PENDING)
     created_at = Column(DateTime, default=datetime.utcnow)
     expires_at = Column(DateTime, nullable=False)

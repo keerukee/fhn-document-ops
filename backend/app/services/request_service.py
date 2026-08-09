@@ -8,13 +8,14 @@ import uuid
 
 class RequestService:
     
-    def _create_upload_request_model(self, data, request_type: str) -> UploadRequest:
+    def _create_upload_request_model(self, data, request_type: str, raw_request_explanation: str = None) -> UploadRequest:
         return UploadRequest(
             id=data.reference_id,
             request_type=request_type,
             customer_name=data.customer_name,
             customer_email=data.customer_email,
             customer_id=data.customer_id,
+            raw_request_explanation=raw_request_explanation,
             status=RequestStatus.PENDING,
             expires_at=datetime.utcnow() + timedelta(days=settings.DEFAULT_LINK_EXPIRATION_DAYS)
         )
@@ -41,7 +42,11 @@ class RequestService:
         expected_docs = await validation_service.analyze_unstructured_request(data.request_explanation)
         
         # Step 2: Create DB records
-        upload_request = self._create_upload_request_model(data, request_type="UNSTRUCTURED")
+        upload_request = self._create_upload_request_model(
+            data, 
+            request_type="UNSTRUCTURED", 
+            raw_request_explanation=data.request_explanation
+        )
         db.add(upload_request)
         
         for doc_schema in expected_docs:
