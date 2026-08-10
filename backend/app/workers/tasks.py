@@ -53,12 +53,12 @@ def process_uploaded_document(request_id: str, document_id: str, blob_url: str):
     messaging_service.publish_upload_event(request_id, document_id, blob_url, validation_results)
     
     # Now check if this was the last document and the request is finished
-    asyncio.run(_finalize_document(request_id, document_id, validation_results['is_valid']))
+    asyncio.run(_finalize_document(request_id, document_id, validation_results))
     
     logger.info(f"Completed processing for document {document_id}")
     return {"status": "success", "document_id": document_id}
 
-async def _finalize_document(request_id: str, document_id: str, is_valid: bool):
+async def _finalize_document(request_id: str, document_id: str, validation_results: dict):
     from app.db.session import SessionLocal
     from app.models.request import UploadRequest, ExpectedDocument, DocumentStatus, RequestStatus
     from sqlalchemy.future import select
@@ -72,7 +72,8 @@ async def _finalize_document(request_id: str, document_id: str, is_valid: bool):
         doc = result.scalar_one_or_none()
         
         if doc:
-            doc.status = DocumentStatus.VALIDATED if is_valid else DocumentStatus.FAILED
+            doc.status = DocumentStatus.VALIDATED if validation_results.get('is_valid') else DocumentStatus.FAILED
+            doc.validation_results = validation_results
             await db.commit()
             
         # Check if parent request is COMPLETED and if ALL documents are done validating
