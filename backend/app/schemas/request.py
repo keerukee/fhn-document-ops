@@ -7,14 +7,12 @@ class ExpectedDocumentBase(BaseModel):
     validation_rules: Optional[Dict[str, Any]] = None
 
 class StructuredRequestCreate(BaseModel):
-    reference_id: str
     customer_name: str
     customer_email: Optional[str] = None
     customer_id: Optional[str] = None
     expected_documents: List[ExpectedDocumentBase]
 
 class UnstructuredRequestCreate(BaseModel):
-    reference_id: str
     customer_name: str
     customer_email: Optional[str] = None
     customer_id: Optional[str] = None

@@ -7,7 +7,6 @@ from sqlalchemy.future import select
 @pytest.mark.asyncio
 async def test_create_structured_request(db_session):
     data = StructuredRequestCreate(
-        reference_id="TEST-1234",
         customer_name="Test Customer",
         customer_email="test@example.com",
         expected_documents=[
@@ -16,10 +15,11 @@ async def test_create_structured_request(db_session):
     )
     
     url = await request_service.create_structured_request(db_session, data)
-    assert url == "/upload/TEST-1234"
+    assert url.startswith("/upload/")
+    request_id = url.split("/")[-1]
     
     # Verify DB
-    stmt = select(UploadRequest).where(UploadRequest.id == "TEST-1234")
+    stmt = select(UploadRequest).where(UploadRequest.id == request_id)
     result = await db_session.execute(stmt)
     req = result.scalar_one_or_none()
     
