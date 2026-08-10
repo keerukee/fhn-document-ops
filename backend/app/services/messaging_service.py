@@ -7,6 +7,11 @@ logger = logging.getLogger(__name__)
 
 class MessagingService:
     def __init__(self):
+        if settings.USE_MOCK_KAFKA:
+            logger.warning("Using Mock Kafka. Events will be logged to console only.")
+            self.producer = None
+            return
+
         self.bootstrap_servers = settings.KAFKA_BOOTSTRAP_SERVERS
         self.topic = settings.KAFKA_UPLOAD_TOPIC
         self.producer = None
@@ -22,9 +27,12 @@ class MessagingService:
         Publishes a Kafka event notifying the internal app that files are uploaded
         and validated, including the blob storage URL.
         """
+        if settings.USE_MOCK_KAFKA:
+            logger.info(f"[MOCK KAFKA] publish_upload_event: req={request_id}, doc={document_id}, url={blob_url}")
+            return
+
         if not self.producer:
-            logger.warning("Kafka Producer not configured. Mocking event publish.")
-            logger.info(f"Mock Published to {self.topic}: req={request_id}, doc={document_id}, url={blob_url}")
+            logger.warning("Kafka Producer not configured.")
             return
             
         event_data = {
@@ -51,9 +59,12 @@ class MessagingService:
         Publishes a Kafka event notifying the internal app that all documents for a
         request have been uploaded and processed.
         """
+        if settings.USE_MOCK_KAFKA:
+            logger.info(f"[MOCK KAFKA] publish_request_completed_event: req={request_id}, ALL_DONE, all_valid={all_valid}")
+            return
+
         if not self.producer:
-            logger.warning("Kafka Producer not configured. Mocking event publish.")
-            logger.info(f"Mock Published to {self.topic}: req={request_id}, ALL_DONE, all_valid={all_valid}")
+            logger.warning("Kafka Producer not configured.")
             return
             
         event_data = {

@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     
     # Database
     USE_MOCK_DB: bool = os.getenv("USE_MOCK_DB", "True").lower() == "true"
+    USE_MOCK_STORAGE: bool = os.getenv("USE_MOCK_STORAGE", "True").lower() == "true"
+    USE_MOCK_KAFKA: bool = os.getenv("USE_MOCK_KAFKA", "True").lower() == "true"
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./fhn_mock.db") 
     
     # Expiration
