@@ -42,7 +42,11 @@ def process_uploaded_document(request_id: str, document_id: str, blob_url: str):
     time.sleep(2) 
     
     # Mock validation results
-    validation_results = {"is_valid": True, "confidence": 0.98}
+    validation_results = {
+        "is_valid": True, 
+        "confidence": 0.98,
+        "justification": "All required fields were present and match the customer's profile."
+    }
     
     # Publish Kafka Event for THIS specific document
     from app.services.messaging_service import messaging_service

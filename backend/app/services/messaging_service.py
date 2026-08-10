@@ -28,7 +28,7 @@ class MessagingService:
         and validated, including the blob storage URL.
         """
         if settings.USE_MOCK_KAFKA:
-            logger.info(f"[MOCK KAFKA] publish_upload_event: req={request_id}, doc={document_id}, url={blob_url}")
+            logger.info(f"[MOCK KAFKA] publish_upload_event: req={request_id}, doc={document_id}, url={blob_url}, results={validation_results}")
             return
 
         if not self.producer:
