@@ -15,9 +15,15 @@ class StorageService:
         Uploads a document to Azure Blob Storage and returns the Blob URL.
         """
         if settings.USE_MOCK_STORAGE or not self.connection_string:
-            logger.info(f"MOCK MODE: Simulating upload for {file_name} to Blob Storage.")
-            # In mock mode, we just return a fake URL so the DB and UI flow works normally.
-            return f"https://mockstorage.blob.core.windows.net/{self.container_name}/{request_id}/{file_name}"
+            logger.info(f"MOCK MODE: Simulating upload for {file_name} to local Storage.")
+            upload_dir = os.path.join(os.getcwd(), "uploads", request_id)
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            file_path = os.path.join(upload_dir, file_name)
+            with open(file_path, "wb") as f:
+                f.write(file_content)
+                
+            return f"local://uploads/{request_id}/{file_name}"
             
         try:
             blob_service_client = BlobServiceClient.from_connection_string(self.connection_string)
@@ -43,6 +49,11 @@ class StorageService:
         """
         if settings.USE_MOCK_STORAGE or not self.connection_string:
             logger.info(f"MOCK MODE: Simulating download for {blob_url}")
+            if blob_url.startswith("local://"):
+                file_path = os.path.join(os.getcwd(), blob_url.replace("local://", "").replace("/", os.sep))
+                if os.path.exists(file_path):
+                    with open(file_path, "rb") as f:
+                        return f.read()
             return b"MOCK_DOCUMENT_CONTENT"
             
         try:
